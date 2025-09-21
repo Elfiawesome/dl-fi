@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using DLFI.Extractor.Nhentai;
-using DLFI.Records;
+using DLFI.Records.BaseModels;
 
 namespace DLFI.Serializer;
 

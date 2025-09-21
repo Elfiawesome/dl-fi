@@ -1,15 +1,16 @@
-using DLFI.Records;
+using DLFI.Records.BaseModels;
+using DLFI.Records.Reader;
 
 namespace DLFI.Extractor;
 
 public abstract class BaseExtracter
 {
-	protected readonly RecordsReader _recordsReader;
+	protected readonly GroupReader _groupReader;
 	public virtual string[] BaseGroup { get; protected set; } = [];
 
-	public BaseExtracter(RecordsReader recordsReader)
+	public BaseExtracter(GroupReader groupReader)
 	{
-		_recordsReader = recordsReader;
+		_groupReader = groupReader;
 	}
 
 	public abstract Task ExtractAsync();

@@ -1,12 +1,25 @@
 using System.Text.Json;
-using DLFI.Records;
+using System.Text.RegularExpressions;
+using DLFI.Records.BaseModels;
+using DLFI.Records.Reader;
 
 namespace DLFI.Extractor.Nhentai;
 
-public class NhentaiWorkExtracter(RecordsReader recordsReader, int targetId) : BaseExtracter(recordsReader)
+public class NhentaiWorkExtracter(GroupReader groupReader, int targetId) : BaseExtracter(groupReader)
 {
 	public const string GalleryApiLink = "https://nhentai.net/api/gallery/";
-	public const string GalleriesApiLink = "https://i3.nhentai.net/galleries/";
+
+	public string GalleriesApiLink
+	{
+		get
+		{
+			_galleryApiIndex++;
+			if (_galleryApiIndex > 3) { _galleryApiIndex = 1; }
+			return $"https://i{_galleryApiIndex}.nhentai.net/galleries/";
+		}
+	}
+	private int _galleryApiIndex = 1;
+
 	public HttpClient client = new();
 	public int TargetId = targetId; //597688;
 
@@ -16,7 +29,7 @@ public class NhentaiWorkExtracter(RecordsReader recordsReader, int targetId) : B
 		var req = await client.GetAsync(link);
 		var htmlContent = await req.Content.ReadAsStringAsync();
 		var data = JsonSerializer.Deserialize<ApiGalleryModel>(htmlContent);
-		_recordsReader.StoreRecord(TargetId.ToString(), new NhentaiGalleryRecordModel() { Gallery = data ?? new() });
+		groupReader.StoreRecord("work", new NhentaiGalleryRecordModel() { Gallery = data ?? new() });
 		if (data == null) { return; }
 
 
@@ -28,13 +41,19 @@ public class NhentaiWorkExtracter(RecordsReader recordsReader, int targetId) : B
 				"w" => "webp",
 				_ => "jpg"
 			};
-			var pageLink = $"{GalleriesApiLink}{data.MediaId}/{pageIndex + 1}.{fileType}";
-			var pageReq = await client.GetAsync(pageLink);
-			var dataStream = pageReq.Content.ReadAsStream();
 
+			string pageLink;
+			HttpResponseMessage pageReq;
+			while (true)
+			{
+				pageLink = $"{GalleriesApiLink}{data.MediaId}/{pageIndex + 1}.{fileType}";
+				pageReq = await client.GetAsync(pageLink);
+				if (pageReq.IsSuccessStatusCode) { break; }
+			}
+			var dataStream = pageReq.Content.ReadAsStream();
 			var record = new BaseDownloadableRecordModel() { DownloadLink = pageLink };
 			var pendingAttachment = new PendingAttachment(fileType, dataStream);
-			_recordsReader.StoreRecord($"{TargetId}-{pageIndex + 1}", record, [pendingAttachment]);
+			groupReader.StoreRecord($"{pageIndex + 1}", record, [pendingAttachment]);
 		}
 	}
 }

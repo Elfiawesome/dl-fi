@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using DLFI.Extractor.Nhentai;
-using DLFI.Records;
+using DLFI.Records.Reader;
 using DLFI.Serializer;
 
 var options = new JsonSerializerOptions
@@ -8,16 +8,17 @@ var options = new JsonSerializerOptions
 	PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
 	TypeInfoResolver = new PolymorphicTypeResolver()
 };
-string path = @"C:\Users\elfia\OneDrive\Desktop\dl-fi-2\Serpent";
-var main = RecordsReader.Open(path, options);
+const string path = @"C:\Users\elfia\OneDrive\Desktop\DL-FI Project\Serpent";
+var main = GroupReader.Open(path, options);
 
-main.Query([]).ToList().ForEach((e) =>
-{
-	Console.WriteLine(e);
-});
-
-// int tgt = 597863;
-// var rr = main?.GetGroupRecursive(["Nhentai", "Galleries", $"{tgt}"]);
-// if (rr == null) { return; }
-// NhentaiWorkExtracter extracter = new(rr, tgt);
-// await extracter.ExtractAsync();
+// List<Task> tasks = [];
+// foreach (var nhId in new int[] {
+// 	598028, 597835, 597688
+// })
+// {
+// 	var rr = main?.GetGroupRecursive(["Nhentai", "Galleries", $"{nhId}"]);
+// 	if (rr == null) { return; }
+// 	NhentaiWorkExtracter extracter = new(rr, nhId);
+// 	tasks.Add(extracter.ExtractAsync());
+// }
+// foreach (var t in tasks) { await t; }

@@ -1,4 +1,4 @@
-using DLFI.Records;
+using DLFI.Records.BaseModels;
 
 namespace DLFI.Extractor.Nhentai;
 
