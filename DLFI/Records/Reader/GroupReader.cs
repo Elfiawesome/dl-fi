@@ -1,5 +1,8 @@
+using System.Data;
+using System.Data.SqlTypes;
 using System.Text.Json;
 using DLFI.Records.BaseModels;
+using Microsoft.Data.Sqlite;
 
 namespace DLFI.Records.Reader;
 
@@ -109,7 +112,7 @@ public class GroupReader : BaseReader
 		for (var attachmentIndex = 0; attachmentIndex < pendingAttachments.Length; attachmentIndex++)
 		{
 			var pendingAttachment = pendingAttachments[attachmentIndex];
-			string attachmentName = recordName + $".a{attachmentIndex}.{pendingAttachment.Ext}";
+			string attachmentName = recordName + $".{attachmentIndex}.{pendingAttachment.Ext}";
 			string attachmentPath = Path.Join(RootPath, attachmentName);
 			using var fs = new FileStream(attachmentPath, FileMode.Create, FileAccess.Write);
 			pendingAttachment.Stream.CopyTo(fs);
@@ -166,6 +169,67 @@ public class GroupReader : BaseReader
 			{
 				yield return _rr;
 			}
+		}
+	}
+
+	public void Sql()
+	{
+		using var connection = new SqliteConnection(@"Data Source=C:\Users\elfia\OneDrive\Desktop\DL-FI Project\Serpent\database.db");
+		connection.Open();
+
+		using var command = connection.CreateCommand();
+		command.CommandText = """
+			CREATE TABLE "RECORDS" (
+				"ID"	TEXT NOT NULL UNIQUE,
+				"TYPE"	TEXT NOT NULL,
+				"NAME"	TEXT,
+				"DATE_CREATED"	NUMERIC,
+				"DATE_RECORDED"	NUMERIC,
+				PRIMARY KEY("ID")
+			);
+			CREATE TABLE "TAGS_RECORD" (
+				"RECORD_ID_1"	TEXT NOT NULL,
+				"RECORD_ID_2"	TEXT NOT NULL
+			);
+			CREATE TABLE "TAGS_GROUP" (
+				"RECORD_ID"	TEXT NOT NULL,
+				"GROUP_ID"	TEXT NOT NULL
+			);
+		""";
+		command.ExecuteNonQuery();
+
+		foreach (var rr in QueryRecords(new()))
+		{
+			Console.WriteLine(rr.FullId);
+			using var cmd = connection.CreateCommand();
+			cmd.CommandText = """
+				INSERT INTO "RECORDS" ("ID", "TYPE", "NAME", "DATE_CREATED", "DATE_RECORDED")
+				VALUES (@id, @type, @name, @dateCreated, @dateRecorded);
+			""";
+			cmd.Parameters.AddWithValue("@id", rr.FullId);
+			cmd.Parameters.AddWithValue("@type", rr.Record.GetType().Name);
+			cmd.Parameters.AddWithValue("@name", rr.Record.Name);
+			cmd.Parameters.AddWithValue("@dateCreated", rr.Record.DateCreated);
+			cmd.Parameters.AddWithValue("@dateRecorded", rr.Record.DateRecorded);
+			cmd.ExecuteNonQuery();
+
+			_sql(connection, rr, rr.ParentReader);
+		}
+	}
+
+	private void _sql(SqliteConnection connection, BaseReader childReader, BaseReader parentReader)
+	{
+		if (parentReader is GroupReader gr)
+		{
+			using var cmd = connection.CreateCommand();
+			cmd.CommandText += """
+				INSERT INTO "TAGS_GROUP" ("RECORD_ID", "GROUP_ID")
+				VALUES (@id, @group_id);
+			""";
+			cmd.Parameters.AddWithValue("@id", childReader.FullId);
+			cmd.Parameters.AddWithValue("@group_id", gr.FullId);
+			cmd.ExecuteNonQuery();
+			if (gr.ParentReader != null) { gr._sql(connection, childReader, gr.ParentReader); }
 		}
 	}
 

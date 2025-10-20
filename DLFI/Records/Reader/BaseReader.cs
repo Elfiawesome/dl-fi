@@ -2,7 +2,7 @@ namespace DLFI.Records.Reader;
 
 public abstract class BaseReader
 {
-	public string Id;
+	public string Id; // essentially its filename
 	public BaseReader? ParentReader;
 	public string FullId => GetFullId();
 	protected BaseReader() { Id = ""; }

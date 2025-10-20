@@ -46,9 +46,16 @@ public class NhentaiWorkExtracter(GroupReader groupReader, int targetId) : BaseE
 			HttpResponseMessage pageReq;
 			while (true)
 			{
-				pageLink = $"{GalleriesApiLink}{data.MediaId}/{pageIndex + 1}.{fileType}";
-				pageReq = await client.GetAsync(pageLink);
-				if (pageReq.IsSuccessStatusCode) { break; }
+				try
+				{
+					pageLink = $"{GalleriesApiLink}{data.MediaId}/{pageIndex + 1}.{fileType}";
+					pageReq = await client.GetAsync(pageLink);
+					if (pageReq.IsSuccessStatusCode) { break; }
+				}
+				catch
+				{
+
+				}
 			}
 			var dataStream = pageReq.Content.ReadAsStream();
 			var record = new BaseDownloadableRecordModel() { DownloadLink = pageLink };
