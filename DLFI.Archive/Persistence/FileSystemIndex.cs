@@ -4,9 +4,10 @@ namespace DLFI.Archive.Persistence;
 
 public class FileSystemIndex
 {
+	public enum Type { Vault, Entry }
 	public string Name = "";
 	public HashSet<Guid> Relationships = [];
-	public int IndexType = 0;
+	public Type IndexType;
 	public string RelativePath;
 
 	public FileSystemIndex(Node node, string relativePath)
@@ -14,6 +15,6 @@ public class FileSystemIndex
 		RelativePath = relativePath;
 		Name = node.Name;
 		Relationships = node.Relationship;
-		if (node is Entry) { IndexType = 1; } else { IndexType = 0; }
+		if (node is Entry) { IndexType = Type.Entry; } else { IndexType = Type.Vault; }
 	}
 }

@@ -50,7 +50,6 @@ public class FileSystemArchiveService
 		};
 	}
 
-
 	// --- Writing Functions ---
 	public void AddNode(Node node, Vault parentVault, Dictionary<string, Stream>? attachmentStreams = null) { AddNode(node, parentVault.Id, attachmentStreams); }
 	public void AddNode(Node node, Guid? parentId = null, Dictionary<string, Stream>? attachmentStreams = null)
@@ -58,9 +57,9 @@ public class FileSystemArchiveService
 		string parentRelativePath = "";
 		if (parentId.HasValue)
 		{
-			if (!_index.TryGetValue(parentId.Value, out var parentVaultIndex) || parentVaultIndex.IndexType != 0)
+			if (!_index.TryGetValue(parentId.Value, out var parentVaultIndex) || parentVaultIndex.IndexType != FileSystemIndex.Type.Vault)
 			{
-				throw new ArgumentException("Parent vault not found or is not a record.", nameof(parentId));
+				throw new ArgumentException("Parent vault not found or is not a entry.", nameof(parentId));
 			}
 			parentRelativePath = parentVaultIndex.RelativePath;
 		}
@@ -120,34 +119,7 @@ public class FileSystemArchiveService
 	}
 
 
-	// --- Reading Functions (TODO LTr!) ---
-	public T? GetNode<T>(string nodeName, Guid parentId)
-		where T : Node
-	{
-		if (!_index.TryGetValue(parentId, out var parentVaultIndex) || parentVaultIndex.IndexType != 0)
-		{
-			throw new ArgumentException("Parent vault not found or is not a record.", nameof(parentId));
-		}
-		return GetNodeByPath<T>(nodeName, parentVaultIndex.RelativePath);
-	}
-
-
-	public T? GetNodeByPath<T>(string fileName, string parentRelativePath = "")
-		where T : Node
-	{
-		string parentAbsolutePath = Path.Combine(_rootPath, parentRelativePath);
-		Directory.CreateDirectory(parentAbsolutePath);
-
-		string relativeFilePath = Path.Combine(parentRelativePath, fileName);
-		string absoluteFilePath = Path.Combine(parentAbsolutePath, fileName);
-
-		if (File.Exists(absoluteFilePath))
-		{
-			var data = File.ReadAllText(absoluteFilePath);
-			return _serializer.Deserialize<T>(data);
-		}
-		return null;
-	}
+	// --- Reading Functions (TODO) ---
 }
 
 // Planned Schema
