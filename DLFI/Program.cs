@@ -1,41 +1,37 @@
-﻿using System.Linq.Expressions;
-using DLFI.Archive;
-using DLFI.Archive.Model.Base;
+﻿using DLFI.Archive;
+using DLFI.Archive.RecordSystem.Model;
 using DLFI.Extractor.Nhentai;
-using DLFI.Extractor.Nhentai.Model.Archive;
 
 var archiveRoot = @"C:\Users\elfia\OneDrive\Desktop\dlfi-archive";
-// if (Directory.Exists(archiveRoot))
-// {
-// 	Directory.Delete(archiveRoot, true); // Clean up previous runs
-// }
+if (Directory.Exists(archiveRoot))
+{
+	Directory.Delete(archiveRoot, true); // Clean up previous runs
+}
 
+var arSv = new ArchiveService(archiveRoot);
 
-var service = new ArchiveService(archiveRoot);
+// Root vault to store our archive
+var serpentArchive = new Vault() { Name = "serpent-archive" };
+arSv.AddItem(serpentArchive);
 
+// A top-level vault which we will use relational-tags to relate works -> people/author
+var people = new Vault() { Name = "people" };
+arSv.AddItem(people, serpentArchive);
 
-// foreach (var entry in service.FindByType<NhentaiWorksVault>((x) => x.Name == ""))
-// {
-// 	Console.WriteLine(entry.Id);
-// }
+// A top-level vault to store manga related works
+var manga = new Vault() { Name = "manga" };
+arSv.AddItem(manga, serpentArchive);
 
-// var rootVault = new Vault { Name = "Root", DisplayName = "My Archive" };
-// var mangaVault = new Vault { Name = "Manga", DisplayName = "Manga" };
-// service.AddVault(rootVault);
-// service.AddVault(mangaVault, rootVault.Id);
+// Manga specific vaults
+var nhentai = new Vault() { Name = "nhentai" };
+arSv.AddItem(nhentai, manga);
+var myreadingmanga = new Vault() { Name = "myreadingmanga" };
+arSv.AddItem(myreadingmanga, manga);
+var bato = new Vault() { Name = "bato" };
+arSv.AddItem(bato, manga);
 
-// int[] download_id = [
-// 	604704,
-// 	604611,
-// 	579312,
-// 	417602
-// ];
-// List<Task> tasks = [];
-// foreach (int id in download_id)
-// {
-// 	var extractor = new NhentaiWorkExtractor(service);
-// 	tasks.Add(extractor.ExtractAndStoreWorkAsync(id, mangaVault.Id));
-// }
-// Task.WaitAll(tasks);
-
-
+var nhex = new NhentaiWorkExtractor(arSv);
+await nhex.ExtractAndStoreWorkAsync(605454, nhentai.Id);
+await nhex.ExtractAndStoreWorkAsync(604611, nhentai.Id);
+await nhex.ExtractAndStoreWorkAsync(604252, nhentai.Id);
+await nhex.ExtractAndStoreWorkAsync(604245, nhentai.Id);

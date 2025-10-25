@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DLFI.Archive;
-using DLFI.Extractor.Nhentai.Model.Archive;
+using DLFI.Extractor.Nhentai.Model.Api;
+using DLFI.Extractor.Nhentai.Model.ArchiveRecord;
 
 namespace DLFI.Extractor.Nhentai;
 
@@ -17,10 +18,11 @@ public class NhentaiWorkExtractor
 		_archiveService = archiveService;
 	}
 
-	public async Task ExtractAndStoreWorkAsync(int workId, Guid parentVaultId)
+	public async Task ExtractAndStoreWorkAsync(int workId, Guid? parentId = null)
 	{
 		Console.WriteLine($"Extracting work ID: {workId}");
 		var req = await _client.GetAsync($"{GalleryApiLink}{workId}");
+		Console.WriteLine($"Received work ID: {workId}");
 		if (!req.IsSuccessStatusCode)
 		{
 			Console.WriteLine($"Failed to get API data for {workId}.");
@@ -31,17 +33,15 @@ public class NhentaiWorkExtractor
 		var data = JsonSerializer.Deserialize<ApiGalleryModel>(jsonContent);
 		if (data == null) return;
 
-		// 1. Create and Save the Vault for the work
-		var workVault = new NhentaiWorksVault()
+		// Add Vault
+		var workVault = new NhentaiWorkVault()
 		{
-			Name = $"{data.Id}",
+			Name = $"{workId}",
 			DisplayName = data.Title.English,
-			SourceId = data.Id.ToString(),
-			UploadDate = DateTimeOffset.FromUnixTimeSeconds(data.UploadDate).UtcDateTime,
-			Tags = new HashSet<string>(data.Tags.Select(t => t.Name), StringComparer.OrdinalIgnoreCase)
+			Api = data
 		};
-		_archiveService.AddVault(workVault, parentVaultId);
-		Console.WriteLine($"Created vault for '{workVault.DisplayName}'");
+		if (parentId == null) { _archiveService.AddItem(workVault); } else { _archiveService.AddItem(workVault, (Guid)parentId); }
+
 
 		for (var i = 0; i < data.Images.Pages.Count; i++)
 		{
@@ -55,30 +55,24 @@ public class NhentaiWorkExtractor
 				string imageUrl = $"https://i{_mediaIndex}.nhentai.net/galleries/{data.MediaId}/{pageNum}.{extension}";
 				try
 				{
-					Console.Write($"  - Downloading page {pageNum}... ");
+					Console.WriteLine($"  - Downloading page {pageNum}... ");
 					imageResponse = await _client.GetAsync(imageUrl);
-					Console.Write($"  Received response ... ");
+					Console.WriteLine($"  Received response ... ");
 					if (imageResponse.IsSuccessStatusCode)
 					{
 						using var imageStream = new MemoryStream();
 						await imageResponse.Content.CopyToAsync(imageStream);
 						imageStream.Position = 0; // Reset stream for reading? (TODO: wat?)
 
-						var pageRecord = new NhentaiWorkPageRecord
+						// Add record
+						_archiveService.AddItem(new NhentaiWorkPageRecord()
 						{
 							Name = $"{pageNum}",
 							DisplayName = $"Page {pageNum}",
-							PageNumber = pageNum,
-							OriginalSourceUrl = imageUrl
-						};
+							AttachmentStreams = { { $"{pageNum}.{extension}", imageStream } }
+						}, workVault.Id);
 
-						var attachments = new Dictionary<string, Stream>
-						{
-							{ $"{pageRecord.Name}.{extension}", imageStream }
-						};
 
-						_archiveService.AddRecord(pageRecord, workVault.Id, attachments);
-						Console.WriteLine("Done.");
 						break;
 					}
 				}
