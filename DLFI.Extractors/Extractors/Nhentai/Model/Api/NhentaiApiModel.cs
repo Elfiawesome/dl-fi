@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace DLFI.Extractor.Nhentai.Model.Api;
+namespace DLFI.Extractors.Extractors.Nhentai.Model.Api;
 
 public class ApiGalleryModel
 {

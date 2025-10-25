@@ -1,29 +1,35 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using DLFI.Archive.RecordSystem.Model;
+using DLFI.Core.Archive.Model;
 
-namespace DLFI.Archive.RecordSystem.Serialization;
+namespace DLFI.Core.Archive.Json;
 
-public class RawRecordResolver : DefaultJsonTypeInfoResolver
+public class NodeResolver : DefaultJsonTypeInfoResolver
 {
+	public NodeTypeMap Mapping;
+
+	public NodeResolver(NodeTypeMap mapping)
+	{
+		Mapping = mapping;
+	}
+
 	public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
 	{
 		JsonTypeInfo jsonTypeInfo = base.GetTypeInfo(type, options);
 
-		if (jsonTypeInfo.Type == typeof(RawRecord))
+		if (jsonTypeInfo.Type == typeof(Node))
 		{
 			jsonTypeInfo.PolymorphismOptions = new JsonPolymorphismOptions
 			{
-				TypeDiscriminatorPropertyName = "record_type",
+				TypeDiscriminatorPropertyName = "node_type",
 				UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FailSerialization,
 			};
 
-			RawRecordTypeMap.IdToType.ToList().ForEach((x) =>
+			Mapping.IdToType.ToList().ForEach((x) =>
 			{
 				jsonTypeInfo.PolymorphismOptions.DerivedTypes.Add(new JsonDerivedType(x.Value, x.Key));
 			});
-			Console.WriteLine("Okay!!");
 		}
 
 		return jsonTypeInfo;

@@ -7,4 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DLFI.Archive\DLFI.Archive.csproj" />
+    <ProjectReference Include="..\DLFI.Extractors\DLFI.Extractors.csproj" />
+  </ItemGroup>
+
 </Project>
