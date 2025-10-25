@@ -11,22 +11,8 @@ public class ExtractorExecutor(FileSystemArchiveService archiveService)
 		Guid? currentTargetId = parentId;
 		await foreach (var result in extractor.ExtractAndStoreWorkAsync())
 		{
-			// I dont like how AddNode is designed bruh...
-			if (currentTargetId == null)
-			{
-				ArchiveService.AddNode(result.Node, result.AttachmentStreams);
-			}
-			else
-			{
-				ArchiveService.AddNode(result.Node, (Guid)currentTargetId, result.AttachmentStreams);
-			}
+			ArchiveService.AddNode(result.Node, currentTargetId, result.AttachmentStreams);
 
-
-
-			if (result.Node is Entry)
-			{
-
-			}
 			if (result.Node is Vault)
 			{
 				currentTargetId = result.Node.Id;

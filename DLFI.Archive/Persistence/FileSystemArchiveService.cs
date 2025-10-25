@@ -52,15 +52,19 @@ public class FileSystemArchiveService
 
 
 	// --- Writing Functions ---
-	public void AddNode(Node node, Dictionary<string, Stream>? attachmentStreams = null) { AddNodeByPath(node, "", attachmentStreams); }
 	public void AddNode(Node node, Vault parentVault, Dictionary<string, Stream>? attachmentStreams = null) { AddNode(node, parentVault.Id, attachmentStreams); }
-	public void AddNode(Node node, Guid parentId, Dictionary<string, Stream>? attachmentStreams = null)
+	public void AddNode(Node node, Guid? parentId = null, Dictionary<string, Stream>? attachmentStreams = null)
 	{
-		if (!_index.TryGetValue(parentId, out var parentVaultIndex) || parentVaultIndex.IndexType != 0)
+		string parentRelativePath = "";
+		if (parentId.HasValue)
 		{
-			throw new ArgumentException("Parent vault not found or is not a record.", nameof(parentId));
+			if (!_index.TryGetValue(parentId.Value, out var parentVaultIndex) || parentVaultIndex.IndexType != 0)
+			{
+				throw new ArgumentException("Parent vault not found or is not a record.", nameof(parentId));
+			}
+			parentRelativePath = parentVaultIndex.RelativePath;
 		}
-		AddNodeByPath(node, parentVaultIndex.RelativePath, attachmentStreams);
+		AddNodeByPath(node, parentRelativePath, attachmentStreams);
 	}
 	private void AddNodeByPath(Node node, string parentRelativePath = "", Dictionary<string, Stream>? attachmentStreams = null)
 	{
