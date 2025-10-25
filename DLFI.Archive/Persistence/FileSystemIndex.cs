@@ -5,10 +5,11 @@ namespace DLFI.Archive.Persistence;
 public class FileSystemIndex
 {
 	public enum Type { Vault, Entry }
-	public string Name = "";
-	public HashSet<Guid> Relationships = [];
-	public Type IndexType;
-	public string RelativePath;
+
+	public string Name { get; set; } = "";
+	public HashSet<Guid> Relationships { get; set; } = [];
+	public Type IndexType { get; set; }
+	public string RelativePath { get; set; }
 
 	public FileSystemIndex(Node node, string relativePath)
 	{

@@ -5,5 +5,5 @@ namespace DLFI.Core.Archive.Domain.Models;
 [NodeItem("entry")]
 public class Entry : Node
 {
-	public HashSet<string> Attachments = [];
+	public HashSet<string> Attachments{ get; set; } = [];
 }

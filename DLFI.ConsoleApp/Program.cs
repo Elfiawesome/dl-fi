@@ -20,9 +20,9 @@ NodeSerializer serializer = new(nodeTypeMap);
 var fsas = new FileSystemArchiveService(archiveRoot, serializer);
 
 
-var extr1 = new NhentaiWorkExtractor(604225);
-var extr2 = new NhentaiWorkExtractor(604225);
-var extr3 = new NhentaiWorkExtractor(604225);
+var extr1 = new NhentaiWorkExtractor(603059);
+var extr2 = new NhentaiWorkExtractor(602875);
+var extr3 = new NhentaiWorkExtractor(602249);
 var exec = new ExtractorExecutor(fsas);
 
 var task1= exec.Start(extr1, fsas.CommonPoint?.Manga);
@@ -33,4 +33,5 @@ await task1;
 await task2;
 await task3;
 
+fsas.SaveIndexFile();
 Console.WriteLine("Done!");

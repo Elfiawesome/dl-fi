@@ -40,7 +40,8 @@ public class NhentaiWorkExtractor : IExtractor
 		{
 			Node = new NhentaiWorkVault()
 			{
-				Name = data.Id.ToString()
+				Name = data.Id.ToString(),
+				Api = data
 			}
 		};
 

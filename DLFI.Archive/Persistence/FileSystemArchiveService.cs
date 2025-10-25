@@ -1,4 +1,4 @@
-using System.Reflection;
+using System.Text.Json;
 using DLFI.Core.Archive.Domain.Models;
 using DLFI.Core.Archive.Json;
 
@@ -7,6 +7,7 @@ namespace DLFI.Archive.Persistence;
 public class FileSystemArchiveService
 {
 	public const string VaultFileName = "_vault.json";
+	public const string IndexFileName = "_index.json";
 
 	public CommonPointStructure? CommonPoint { get; private set; }
 
@@ -50,8 +51,9 @@ public class FileSystemArchiveService
 		};
 	}
 
+
 	// --- Writing Functions ---
-	public void AddNode(Node node, Vault parentVault, Dictionary<string, Stream>? attachmentStreams = null) { AddNode(node, parentVault.Id, attachmentStreams); }
+	public void AddNode(Node node, Vault? parentVault, Dictionary<string, Stream>? attachmentStreams = null) { AddNode(node, parentVault?.Id ?? null, attachmentStreams); }
 	public void AddNode(Node node, Guid? parentId = null, Dictionary<string, Stream>? attachmentStreams = null)
 	{
 		string parentRelativePath = "";
@@ -113,13 +115,22 @@ public class FileSystemArchiveService
 			string dataJson = _serializer.Serialize(node);
 			if (File.Exists(absoluteFilePath)) { /* uh oh... */ }
 			File.WriteAllText(absoluteFilePath, dataJson);
-			_index.Add(node.Id, new FileSystemIndex(node, relativeFilePath));
+			_index.Add(node.Id, new FileSystemIndex(node, relativeVaultPath));
 			Console.WriteLine("Writing Vault to " + absoluteFilePath);
 		}
 	}
 
 
 	// --- Reading Functions (TODO) ---
+
+
+	// 
+	public void SaveIndexFile()
+	{
+		var data = JsonSerializer.Serialize(_index);
+		string absoluteFilePath = Path.Combine(_rootPath, IndexFileName);
+		File.WriteAllText(absoluteFilePath, data);
+	}
 }
 
 // Planned Schema
