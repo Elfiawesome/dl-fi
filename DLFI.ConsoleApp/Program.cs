@@ -20,7 +20,17 @@ NodeSerializer serializer = new(nodeTypeMap);
 var fsas = new FileSystemArchiveService(archiveRoot, serializer);
 
 
-var extr = new NhentaiWorkExtractor(604225);
+var extr1 = new NhentaiWorkExtractor(604225);
+var extr2 = new NhentaiWorkExtractor(604225);
+var extr3 = new NhentaiWorkExtractor(604225);
 var exec = new ExtractorExecutor(fsas);
 
-await exec.Start(extr, fsas.CommonPoint?.Manga);
+var task1= exec.Start(extr1, fsas.CommonPoint?.Manga);
+var task2= exec.Start(extr2, fsas.CommonPoint?.Manga);
+var task3 = exec.Start(extr3, fsas.CommonPoint?.Manga);
+
+await task1;
+await task2;
+await task3;
+
+Console.WriteLine("Done!");

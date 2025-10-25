@@ -97,7 +97,7 @@ public class FileSystemArchiveService
 			string data = _serializer.Serialize(node);
 			if (File.Exists(absoluteFilePath)) { /* uh oh... */ }
 			File.WriteAllText(absoluteFilePath, data);
-			_index.Add(node.Id, new FileSystemIndex() { IndexType = 1, RelativePath = relativeFilePath });
+			_index.Add(node.Id, new FileSystemIndex(node, relativeFilePath));
 			Console.WriteLine("Writing Entry to " + absoluteFilePath);
 		}
 		if (nodeType == typeof(Vault) || nodeType.IsSubclassOf(typeof(Vault)))
@@ -114,11 +114,10 @@ public class FileSystemArchiveService
 			string dataJson = _serializer.Serialize(node);
 			if (File.Exists(absoluteFilePath)) { /* uh oh... */ }
 			File.WriteAllText(absoluteFilePath, dataJson);
-			_index.Add(node.Id, new FileSystemIndex() { IndexType = 0, RelativePath = relativeVaultPath });
+			_index.Add(node.Id, new FileSystemIndex(node, relativeFilePath));
 			Console.WriteLine("Writing Vault to " + absoluteFilePath);
 		}
 	}
-
 
 
 	// --- Reading Functions (TODO LTr!) ---

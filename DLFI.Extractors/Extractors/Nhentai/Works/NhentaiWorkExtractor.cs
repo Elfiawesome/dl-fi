@@ -5,14 +5,17 @@ using DLFI.Extractors.Extractors.Nhentai.Model.Archive;
 
 namespace DLFI.Extractors.Extractors.Nhentai.Works;
 
-public class NhentaiWorkExtractor
+
+public class NhentaiWorkExtractor : IExtractor
 {
+	public string Name => "Nhentai";
 	public const string GalleryApiLink = "https://nhentai.net/api/gallery/";
 
 
 	private readonly HttpClient _client = new();
 	private int _mediaIndex = 4;
 	private int _targetId;
+
 
 	public NhentaiWorkExtractor(int targetId)
 	{
