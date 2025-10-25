@@ -11,12 +11,18 @@ public class NhentaiWorkExtractor
 
 
 	private readonly HttpClient _client = new();
-	private int _mediaIndex = 1;
+	private int _mediaIndex = 4;
+	private int _targetId;
 
-
-	public async IAsyncEnumerable<ExtractionResult> ExtractAndStoreWorkAsync(int workId)
+	public NhentaiWorkExtractor(int targetId)
 	{
-		var workInfoRequest = await _client.GetAsync($"{GalleryApiLink}{workId}");
+		_targetId = targetId;
+	}
+
+
+	public async IAsyncEnumerable<ExtractionResult> ExtractAndStoreWorkAsync()
+	{
+		var workInfoRequest = await _client.GetAsync($"{GalleryApiLink}{_targetId}");
 		if (!workInfoRequest.IsSuccessStatusCode)
 		{
 			yield break;
@@ -40,33 +46,47 @@ public class NhentaiWorkExtractor
 			var pageNum = i + 1;
 			var pageInfo = data.Images.Pages[i];
 			string extension = pageInfo.Type.ToLower() switch { "j" => "jpg", "p" => "png", "w" => "webp", _ => "gif" };
-			HttpResponseMessage imageResponse;
-			while (true)
+
+			HttpResponseMessage? imageResponse = null;
+			for (int mediaServerIndex = 3; mediaServerIndex <= 7; mediaServerIndex++) //Idk why is i1 server so slow...
 			{
-				string imageUrl = $"https://i{_mediaIndex}.nhentai.net/galleries/{data.MediaId}/{pageNum}.{extension}";
+				string imageUrl = $"https://i{mediaServerIndex}.nhentai.net/galleries/{data.MediaId}/{pageNum}.{extension}";
 				try
 				{
-					Console.WriteLine($"  - Downloading page {pageNum}... ");
 					imageResponse = await _client.GetAsync(imageUrl);
-					Console.WriteLine($"  Received response ... ");
-					if (imageResponse.IsSuccessStatusCode)
-					{
-						using var imageStream = new MemoryStream();
-						await imageResponse.Content.CopyToAsync(imageStream);
-						imageStream.Position = 0; // Reset stream for reading? (TODO: wat?)
+					if (imageResponse.IsSuccessStatusCode) break;
 
-						// Save Image here...
-
-						break;
-					}
+					imageResponse.Dispose(); // Dispose failed response before retrying
+					imageResponse = null;
 				}
-				catch
+				catch { /* Ignore and try next server */ }
+			}
+
+			if (imageResponse?.IsSuccessStatusCode == true)
+			{
+				var imageStream = new MemoryStream();
+				await imageResponse.Content.CopyToAsync(imageStream);
+				imageStream.Position = 0;
+
+				var pageEntry = new NhentaiWorkPageEntry
 				{
-					_mediaIndex++;
-					if (_mediaIndex > 3) { _mediaIndex = 1; }
-				}
+					Name = $"{pageNum}",
+					PageIndex = pageNum
+				};
+
+				yield return new ExtractionResult
+				{
+					Node = pageEntry,
+					AttachmentStreams = new Dictionary<string, Stream>
+					{
+						{ $"{pageEntry.Name}.{extension}", imageStream }
+					}
+				};
+				imageResponse.Dispose();
+			}
+			else
+			{
 			}
 		}
-		yield break;
 	}
 }

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using DLFI.Core.Archive.Model;
+using DLFI.Core.Archive.Domain.Models;
 
 namespace DLFI.Core.Archive.Json;
 

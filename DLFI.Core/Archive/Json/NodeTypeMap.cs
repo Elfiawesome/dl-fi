@@ -1,5 +1,5 @@
 using System.Reflection;
-using DLFI.Core.Archive.Model;
+using DLFI.Core.Archive.Domain.Models;
 
 namespace DLFI.Core.Archive.Json;
 

@@ -1,23 +1,24 @@
 using System.Reflection;
+using DLFI.Core.Archive.Domain.Models;
 using DLFI.Core.Archive.Json;
-using DLFI.Core.Archive.Model;
 
 namespace DLFI.Archive.Persistence;
 
 public class FileSystemArchiveService
 {
 	public const string VaultFileName = "_vault.json";
-	public CommonPointStructure CommonPoint { get; private set; }
+
+	public CommonPointStructure? CommonPoint { get; private set; }
 
 	private string _rootPath;
 	private Dictionary<Guid, FileSystemIndex> _index = [];
+	public IReadOnlyDictionary<Guid, FileSystemIndex> Index => _index;
 	private NodeSerializer _serializer;
 
 	public FileSystemArchiveService(string rootPath, NodeSerializer serializer)
 	{
 		_rootPath = rootPath;
 		_serializer = serializer;
-		// Assume we create a new archive everytime
 		Directory.CreateDirectory(_rootPath);
 		TempSetupSystem();
 	}
@@ -49,26 +50,19 @@ public class FileSystemArchiveService
 		};
 	}
 
-	public void AddNode(Node node)
-	{
-		AddNodeByPath(node);
-	}
 
-	public void AddNode(Node node, Vault parentVault)
-	{
-		AddNode(node, parentVault.Id);
-	}
-
-	public void AddNode(Node node, Guid parentId)
+	// --- Writing Functions ---
+	public void AddNode(Node node, Dictionary<string, Stream>? attachmentStreams = null) { AddNodeByPath(node, "", attachmentStreams); }
+	public void AddNode(Node node, Vault parentVault, Dictionary<string, Stream>? attachmentStreams = null) { AddNode(node, parentVault.Id, attachmentStreams); }
+	public void AddNode(Node node, Guid parentId, Dictionary<string, Stream>? attachmentStreams = null)
 	{
 		if (!_index.TryGetValue(parentId, out var parentVaultIndex) || parentVaultIndex.IndexType != 0)
 		{
 			throw new ArgumentException("Parent vault not found or is not a record.", nameof(parentId));
 		}
-		AddNodeByPath(node, parentVaultIndex.RelativePath);
+		AddNodeByPath(node, parentVaultIndex.RelativePath, attachmentStreams);
 	}
-
-	private void AddNodeByPath(Node node, string parentRelativePath = "")
+	private void AddNodeByPath(Node node, string parentRelativePath = "", Dictionary<string, Stream>? attachmentStreams = null)
 	{
 		string parentAbsolutePath = Path.Combine(_rootPath, parentRelativePath);
 		Directory.CreateDirectory(parentAbsolutePath);
@@ -80,10 +74,27 @@ public class FileSystemArchiveService
 			string relativeFilePath = Path.Combine(parentRelativePath, fileName);
 			string absoluteFilePath = Path.Combine(parentAbsolutePath, fileName);
 
+			if (attachmentStreams != null && node is Entry entry)
+			{
+				foreach (var item in attachmentStreams)
+				{
+					var attachmentFilename = item.Key;
+					var attachmentStream = item.Value;
+					string relativeAttachmentPath = Path.Combine(parentRelativePath, attachmentFilename);
+					string absoluteAttachmentPath = Path.Combine(parentAbsolutePath, attachmentFilename);
+					using var fs = new FileStream(absoluteAttachmentPath, FileMode.CreateNew);
+					attachmentStream.CopyTo(fs);
+					entry.Attachments.Add(item.Key);
+					fs.Close();
+					attachmentStream.Close();
+				}
+			}
+
 			string data = _serializer.Serialize(node);
 			if (File.Exists(absoluteFilePath)) { /* uh oh... */ }
 			File.WriteAllText(absoluteFilePath, data);
 			_index.Add(node.Id, new FileSystemIndex() { IndexType = 1, RelativePath = relativeFilePath });
+			Console.WriteLine("Writing Entry to " + absoluteFilePath);
 		}
 		if (nodeType == typeof(Vault) || nodeType.IsSubclassOf(typeof(Vault)))
 		{
@@ -100,12 +111,13 @@ public class FileSystemArchiveService
 			if (File.Exists(absoluteFilePath)) { /* uh oh... */ }
 			File.WriteAllText(absoluteFilePath, dataJson);
 			_index.Add(node.Id, new FileSystemIndex() { IndexType = 0, RelativePath = relativeVaultPath });
+			Console.WriteLine("Writing Vault to " + absoluteFilePath);
 		}
 	}
 
 
 
-	// Reading TODO later
+	// --- Reading Functions (TODO LTr!) ---
 	public T? GetNode<T>(string nodeName, Guid parentId)
 		where T : Node
 	{
@@ -132,17 +144,6 @@ public class FileSystemArchiveService
 			return _serializer.Deserialize<T>(data);
 		}
 		return null;
-	}
-
-
-	public struct CommonPointStructure
-	{
-		public Guid Definition;
-		public Guid Author;
-		public Guid Tag;
-		public Guid Medium;
-		public Guid Manga;
-		public Guid Image;
 	}
 }
 
